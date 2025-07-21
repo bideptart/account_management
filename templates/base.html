@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Account Management System{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        },
+                        'gray': {
+                            50: '#f9fafb',
+                            100: '#f3f4f6',
+                            200: '#e5e7eb',
+                            300: '#d1d5db',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        .file-icon {
+            width: 48px;
+            height: 48px;
+        }
+        
+        .avatar-placeholder {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .drag-over {
+            border-color: #3b82f6 !important;
+            background-color: #eff6ff !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{% url 'dashboard' %}" class="flex items-center space-x-2 text-xl font-bold text-primary-600 hover:text-primary-700 transition-colors">
+                        <i class="fas fa-folder-open"></i>
+                        <span>FileManager</span>
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'files:file_list' %}" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors">
+                            <i class="fas fa-folder mr-2"></i>
+                            My Files
+                        </a>
+                        {% if user.is_superuser %}
+                            <a href="{% url 'admin_dashboard' %}" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors">
+                                <i class="fas fa-tachometer-alt mr-2"></i>
+                                Admin Dashboard
+                            </a>
+                        {% endif %}
+                        <span class="text-gray-600 text-sm">Welcome, <span class="font-medium text-gray-900">{{ user.username }}</span>!</span>
+                        <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors">
+                                <i class="fas fa-sign-out-alt mr-2"></i>
+                                Logout
+                            </button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            Login
+                        </a>
+                        <a href="{% url 'register' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md transition-colors">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            Register
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-6 space-y-4">
+                {% for message in messages %}
+                    <div class="{% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800{% elif message.tags == 'success' %}bg-green-50 border border-green-200 text-green-800{% elif message.tags == 'warning' %}bg-yellow-50 border border-yellow-200 text-yellow-800{% else %}bg-blue-50 border border-blue-200 text-blue-800{% endif %} px-4 py-3 rounded-lg flex items-center justify-between">
+                        <div class="flex items-center">
+                            {% if message.tags == 'error' %}
+                                <i class="fas fa-exclamation-circle mr-2"></i>
+                            {% elif message.tags == 'success' %}
+                                <i class="fas fa-check-circle mr-2"></i>
+                            {% elif message.tags == 'warning' %}
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle mr-2"></i>
+                            {% endif %}
+                            <span>{{ message }}</span>
+                        </div>
+                        <button onclick="this.parentElement.remove()" class="text-current opacity-50 hover:opacity-75">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+    
+    <!-- Preview Modal -->
+    <div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b">
+                <h3 id="previewModalTitle" class="text-lg font-semibold text-gray-900">File Preview</h3>
+                <button onclick="closePreviewModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="previewModalContent" class="p-4 overflow-auto max-h-[calc(90vh-120px)]">
+                <!-- Preview content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for enhanced functionality -->
+    <script>
+        // Drag and drop functionality
+        function initializeDragAndDrop() {
+            const dropzones = document.querySelectorAll('.dropzone');
+            
+            dropzones.forEach(dropzone => {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, preventDefaults, false);
+                });
+
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, () => {
+                        dropzone.classList.add('drag-over');
+                    }, false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, () => {
+                        dropzone.classList.remove('drag-over');
+                    }, false);
+                });
+
+                dropzone.addEventListener('drop', function(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    const fileInput = this.querySelector('input[type="file"]') || document.querySelector('input[type="file"]');
+                    if (fileInput && files.length > 0) {
+                        fileInput.files = files;
+                        // Trigger change event
+                        const event = new Event('change', { bubbles: true });
+                        fileInput.dispatchEvent(event);
+                    }
+                }, false);
+            });
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDragAndDrop();
+        });
+
+        // Bulk actions visibility function
+         function updateBulkActionsVisibility() {
+             const checkedBoxes = document.querySelectorAll('.file-checkbox:checked, .folder-checkbox:checked');
+             const bulkActions = document.getElementById('bulkActions');
+             
+             if (bulkActions) {
+                 if (checkedBoxes.length > 0) {
+                     bulkActions.classList.remove('hidden');
+                     const selectedCount = document.getElementById('selectedCount');
+                     if (selectedCount) {
+                         selectedCount.textContent = checkedBoxes.length;
+                     }
+                 } else {
+                     bulkActions.classList.add('hidden');
+                 }
+             }
+         }
+         
+         // Bulk action functions
+         function downloadSelected() {
+             const checkedBoxes = document.querySelectorAll('.file-checkbox:checked, .folder-checkbox:checked');
+             checkedBoxes.forEach(checkbox => {
+                 const card = checkbox.closest('.file-card, .folder-card');
+                 const downloadBtn = card.querySelector('[onclick*="download"]');
+                 if (downloadBtn) {
+                     downloadBtn.click();
+                 }
+             });
+         }
+         
+         function deleteSelected() {
+             const checkedBoxes = document.querySelectorAll('.file-checkbox:checked, .folder-checkbox:checked');
+             if (checkedBoxes.length > 0 && confirm(`Are you sure you want to delete ${checkedBoxes.length} selected items?`)) {
+                 checkedBoxes.forEach(checkbox => {
+                     const card = checkbox.closest('.file-card, .folder-card');
+                     const deleteBtn = card.querySelector('[onclick*="delete"]');
+                     if (deleteBtn) {
+                         deleteBtn.click();
+                     }
+                 });
+             }
+         }
+         
+         function clearSelection() {
+             const checkedBoxes = document.querySelectorAll('.file-checkbox:checked, .folder-checkbox:checked');
+             checkedBoxes.forEach(checkbox => {
+                 checkbox.checked = false;
+             });
+             updateBulkActionsVisibility();
+         }
+
+        // File type icon helper
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const iconMap = {
+                'pdf': 'fas fa-file-pdf text-red-500',
+                'doc': 'fas fa-file-word text-blue-500',
+                'docx': 'fas fa-file-word text-blue-500',
+                'xls': 'fas fa-file-excel text-green-500',
+                'xlsx': 'fas fa-file-excel text-green-500',
+                'ppt': 'fas fa-file-powerpoint text-orange-500',
+                'pptx': 'fas fa-file-powerpoint text-orange-500',
+                'jpg': 'fas fa-file-image text-purple-500',
+                'jpeg': 'fas fa-file-image text-purple-500',
+                'png': 'fas fa-file-image text-purple-500',
+                'gif': 'fas fa-file-image text-purple-500',
+                'mp4': 'fas fa-file-video text-red-500',
+                'avi': 'fas fa-file-video text-red-500',
+                'mp3': 'fas fa-file-audio text-yellow-500',
+                'wav': 'fas fa-file-audio text-yellow-500',
+                'zip': 'fas fa-file-archive text-gray-500',
+                'rar': 'fas fa-file-archive text-gray-500',
+                'txt': 'fas fa-file-alt text-gray-500',
+            };
+            return iconMap[ext] || 'fas fa-file text-gray-400';
+        }
+
+        // Show message function for notifications
+        function showMessage(message, type = 'info') {
+            // Create message element
+            const messageDiv = document.createElement('div');
+            let bgColor, borderColor, textColor, icon;
+            
+            switch(type) {
+                case 'success':
+                    bgColor = 'bg-green-50';
+                    borderColor = 'border-green-200';
+                    textColor = 'text-green-800';
+                    icon = 'fas fa-check-circle';
+                    break;
+                case 'error':
+                    bgColor = 'bg-red-50';
+                    borderColor = 'border-red-200';
+                    textColor = 'text-red-800';
+                    icon = 'fas fa-exclamation-circle';
+                    break;
+                case 'warning':
+                    bgColor = 'bg-yellow-50';
+                    borderColor = 'border-yellow-200';
+                    textColor = 'text-yellow-800';
+                    icon = 'fas fa-exclamation-triangle';
+                    break;
+                default:
+                    bgColor = 'bg-blue-50';
+                    borderColor = 'border-blue-200';
+                    textColor = 'text-blue-800';
+                    icon = 'fas fa-info-circle';
+            }
+            
+            messageDiv.className = `${bgColor} border ${borderColor} ${textColor} px-4 py-3 rounded-lg flex items-center justify-between mb-4`;
+            messageDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="${icon} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-current opacity-50 hover:opacity-75">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            // Insert at the top of main content
+            const main = document.querySelector('main');
+            if (main) {
+                main.insertBefore(messageDiv, main.firstChild);
+                
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.remove();
+                    }
+                }, 5000);
+            }
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

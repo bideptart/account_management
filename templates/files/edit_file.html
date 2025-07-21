@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Edit File</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field.errors }}
+                            {{ field|add_class:"form-control" }}
+                        </div>
+                    {% endfor %}
+                    
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    
+                    {% if file.folder %}
+                        <a href="{% url 'files:folder_detail' file.folder.id %}{% if request.GET.user_id %}?user_id={{ request.GET.user_id }}{% endif %}" class="btn btn-secondary">Cancel</a>
+                    {% else %}
+                        <a href="{% url 'files:file_list' %}{% if request.GET.user_id %}?user_id={{ request.GET.user_id }}{% endif %}" class="btn btn-secondary">Cancel</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,220 @@
+<!-- File Card Component -->
+<div class="file-card bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 group" 
+     data-file-id="{{ file.id }}" 
+     data-file-name="{{ file.name|lower }}">
+    
+    <!-- File Icon -->
+    <div class="text-center mb-3">
+        <i class="file-icon text-4xl mb-2" data-filename="{{ file.name }}"></i>
+    </div>
+    
+    <!-- File Info -->
+    <div class="text-center">
+        <h3 class="font-medium text-gray-900 truncate mb-1" title="{{ file.name }}">
+            {{ file.name }}
+        </h3>
+        <p class="text-xs text-gray-500 mb-1">{{ file.size|filesizeformat }}</p>
+        <p class="text-xs text-gray-400 mb-3">
+            <i class="fas fa-clock mr-1"></i>
+            {{ file.uploaded_at|date:"M d, Y H:i" }}
+        </p>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="flex justify-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <!-- Download Button -->
+        <a href="{{ file.file.url }}" 
+           class="bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+           title="Download" 
+           download>
+            <i class="fas fa-download"></i>
+        </a>
+        
+        <!-- Preview Button (for images and PDFs) -->
+        {% if file.name|lower|slice:"-4:" in ".jpg,.png,.gif,.pdf" or file.name|lower|slice:"-5:" in ".jpeg" %}
+            <button data-url="{{ file.file.url }}" 
+                    data-name="{{ file.name|escape }}"
+                    onclick="handlePreviewClick(this)" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                    title="Preview">
+                <i class="fas fa-eye"></i>
+            </button>
+        {% endif %}
+        
+        <!-- Rename Button -->
+        <button data-id="{{ file.id }}" 
+                data-name="{{ file.name|escape }}"
+                onclick="handleRenameClick(this)" 
+                class="bg-gray-600 hover:bg-gray-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                title="Rename">
+            <i class="fas fa-edit"></i>
+        </button>
+        
+        <!-- Share Button -->
+        <button data-id="{{ file.id }}" 
+                data-name="{{ file.name|escape }}"
+                onclick="handleShareClick(this)" 
+                class="bg-purple-600 hover:bg-purple-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                title="Share">
+            <i class="fas fa-share-alt"></i>
+        </button>
+        
+        <!-- Delete Button -->
+        <button data-id="{{ file.id }}" 
+                data-name="{{ file.name|escape }}"
+                onclick="handleDeleteClick(this)" 
+                class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                title="Delete">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+    
+    <!-- File Type Badge -->
+    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span class="bg-gray-900 bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+            {{ file.name|slice:"-4:"|upper }}
+        </span>
+    </div>
+    
+    <!-- Selection Checkbox (hidden by default) -->
+    <div class="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <input type="checkbox" 
+               class="file-checkbox w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500" 
+               value="{{ file.id }}" 
+               onchange="toggleFileSelection(this)">
+    </div>
+</div>
+
+<script>
+// File card functionality
+function handlePreviewClick(button) {
+    const fileUrl = button.dataset.url;
+    const fileName = button.dataset.name;
+    const modal = document.getElementById('previewModal');
+    const modalTitle = document.getElementById('previewModalTitle');
+    const modalContent = document.getElementById('previewModalContent');
+    
+    if (!modal || !modalTitle || !modalContent) return;
+    
+    modalTitle.textContent = fileName;
+    
+    // Determine file type and create appropriate preview
+    const ext = fileName.split('.').pop().toLowerCase();
+    
+    if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+        modalContent.innerHTML = `<img src="${fileUrl}" alt="${fileName}" class="max-w-full max-h-96 mx-auto rounded-lg">`;
+    } else if (ext === 'pdf') {
+        modalContent.innerHTML = `<iframe src="${fileUrl}" class="w-full h-96 rounded-lg"></iframe>`;
+    } else {
+        modalContent.innerHTML = `<p class="text-center text-gray-500">Preview not available for this file type.</p>`;
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function handleRenameClick(button) {
+    const fileId = button.dataset.id;
+    const currentName = button.dataset.name;
+    const newName = prompt('Enter new file name:', currentName);
+    if (newName && newName !== currentName) {
+        // Send AJAX request to rename file
+        fetch(`/files/rename/${fileId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ name: newName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error renaming file: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error renaming file');
+        });
+    }
+}
+
+function handleShareClick(button) {
+    const fileId = button.dataset.id;
+    // Generate shareable link
+    const shareUrl = `${window.location.origin}/files/share/${fileId}/`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'Shared File',
+            url: shareUrl
+        });
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            alert('Share link copied to clipboard!');
+        }).catch(() => {
+            prompt('Copy this link to share:', shareUrl);
+        });
+    }
+}
+
+function handleDeleteClick(button) {
+    const fileId = button.dataset.id;
+    const fileName = button.dataset.name;
+    if (confirm(`Are you sure you want to delete "${fileName}"? This action cannot be undone.`)) {
+        // Send AJAX request to delete file
+        fetch(`/files/delete/${fileId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the file card from DOM
+                const fileCard = document.querySelector(`[data-file-id="${fileId}"]`);
+                if (fileCard) {
+                    fileCard.remove();
+                }
+                // Show success message
+                showMessage('File deleted successfully', 'success');
+            } else {
+                alert('Error deleting file: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting file');
+        });
+    }
+}
+
+function toggleFileSelection(checkbox) {
+    const fileCard = checkbox.closest('.file-card');
+    if (checkbox.checked) {
+        fileCard.classList.add('ring-2', 'ring-primary-500', 'bg-primary-50');
+    } else {
+        fileCard.classList.remove('ring-2', 'ring-primary-500', 'bg-primary-50');
+    }
+    
+    // Update bulk actions visibility
+    updateBulkActionsVisibility();
+}
+
+// updateBulkActionsVisibility function is now defined in base.html
+
+// Initialize file icons when the card is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.file-icon').forEach(icon => {
+        const filename = icon.dataset.filename;
+        if (filename) {
+            const iconClass = getFileIconClass(filename);
+            icon.className = 'file-icon text-4xl mb-2 ' + iconClass;
+        }
+    });
+});
+</script>

@@ -1,0 +1,183 @@
+<!-- Breadcrumb Navigation Component -->
+<nav class="flex mb-6" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <!-- Home/Root -->
+        <li class="inline-flex items-center">
+            <a href="{% url 'files:file_list' %}" 
+               class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors">
+                <i class="fas fa-home mr-2"></i>
+                My Files
+            </a>
+        </li>
+        
+        <!-- Folder Path -->
+        {% if current_folder %}
+            {% for folder in breadcrumb_folders %}
+                <li>
+                    <div class="flex items-center">
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                        {% if not forloop.last %}
+                            <a href="{% url 'files:file_list' %}?folder_id={{ folder.id }}" 
+                               class="text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors">
+                                {{ folder.name }}
+                            </a>
+                        {% else %}
+                            <span class="text-sm font-medium text-gray-500">{{ folder.name }}</span>
+                        {% endif %}
+                    </div>
+                </li>
+            {% endfor %}
+        {% endif %}
+    </ol>
+    
+    <!-- Breadcrumb Actions -->
+    <div class="ml-auto flex items-center space-x-2">
+        <!-- Copy Path Button -->
+        <button onclick="copyCurrentPath()" 
+                class="text-gray-400 hover:text-gray-600 transition-colors" 
+                title="Copy current path">
+            <i class="fas fa-copy"></i>
+        </button>
+        
+        <!-- Go Up Button -->
+        {% if current_folder and current_folder.parent %}
+            <a href="{% url 'files:file_list' %}?folder_id={{ current_folder.parent.id }}" 
+               class="text-gray-400 hover:text-gray-600 transition-colors" 
+               title="Go up one level">
+                <i class="fas fa-level-up-alt"></i>
+            </a>
+        {% elif current_folder %}
+            <a href="{% url 'files:file_list' %}" 
+               class="text-gray-400 hover:text-gray-600 transition-colors" 
+               title="Go to root">
+                <i class="fas fa-level-up-alt"></i>
+            </a>
+        {% endif %}
+        
+        <!-- Refresh Button -->
+        <button onclick="window.location.reload()" 
+                class="text-gray-400 hover:text-gray-600 transition-colors" 
+                title="Refresh">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+</nav>
+
+<!-- Mobile Breadcrumb (Simplified) -->
+<nav class="md:hidden mb-4" aria-label="Mobile Breadcrumb">
+    <div class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+        <div class="flex items-center min-w-0 flex-1">
+            {% if current_folder %}
+                <!-- Back Button -->
+                {% if current_folder.parent %}
+                    <a href="{% url 'files:file_list' %}?folder_id={{ current_folder.parent.id }}" 
+                       class="mr-3 text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                {% else %}
+                    <a href="{% url 'files:file_list' %}" 
+                       class="mr-3 text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                {% endif %}
+                
+                <!-- Current Folder -->
+                <div class="min-w-0 flex-1">
+                    <h2 class="text-sm font-medium text-gray-900 truncate">{{ current_folder.name }}</h2>
+                    <p class="text-xs text-gray-500">
+                        {% if breadcrumb_folders|length > 1 %}
+                            in {{ breadcrumb_folders|slice:":-1"|last.name }}
+                        {% else %}
+                            in My Files
+                        {% endif %}
+                    </p>
+                </div>
+            {% else %}
+                <!-- Root Level -->
+                <div class="flex items-center">
+                    <i class="fas fa-home mr-2 text-gray-500"></i>
+                    <h2 class="text-sm font-medium text-gray-900">My Files</h2>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Mobile Actions -->
+        <div class="flex items-center space-x-2 ml-3">
+            <button onclick="copyCurrentPath()" 
+                    class="text-gray-400 hover:text-gray-600 transition-colors p-1" 
+                    title="Copy path">
+                <i class="fas fa-copy text-sm"></i>
+            </button>
+            <button onclick="window.location.reload()" 
+                    class="text-gray-400 hover:text-gray-600 transition-colors p-1" 
+                    title="Refresh">
+                <i class="fas fa-sync-alt text-sm"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<script>
+// Breadcrumb functionality
+function copyCurrentPath() {
+    // Build the current path string
+    let path = 'My Files';
+    {% if breadcrumb_folders %}
+        const folders = [{% for folder in breadcrumb_folders %}'{{ folder.name|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+        path += ' > ' + folders.join(' > ');
+    {% endif %}
+    
+    // Copy to clipboard
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(path).then(() => {
+            showMessage('Path copied to clipboard', 'success');
+        }).catch(() => {
+            fallbackCopyTextToClipboard(path);
+        });
+    } else {
+        fallbackCopyTextToClipboard(path);
+    }
+}
+
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showMessage('Path copied to clipboard', 'success');
+    } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+        showMessage('Unable to copy path', 'error');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    // Alt + Up Arrow: Go up one level
+    if (e.altKey && e.key === 'ArrowUp') {
+        e.preventDefault();
+        {% if current_folder and current_folder.parent %}
+            window.location.href = '{% url "files:file_list" %}?folder_id={{ current_folder.parent.id }}';
+        {% elif current_folder %}
+            window.location.href = '{% url "files:file_list" %}';
+        {% endif %}
+    }
+    
+    // Ctrl + R: Refresh (prevent default browser refresh)
+    if (e.ctrlKey && e.key === 'r') {
+        e.preventDefault();
+        window.location.reload();
+    }
+});
+
+
+</script>

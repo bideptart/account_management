@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "speed-urls-422904",
+  "private_key_id": "f13b7e68a8315bf1bb097686d1226f8f9b856020",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCh5Yvgcc4i8PkE\nuDgQuW/7NpxLZhgB0p18iUOlVlB63kbHcxwIqJMFdVFSFDMQfR/fBilDzRlBr+oB\nre8PpOdJB/AW1HG4hZtBn3xS4jqPjE10qJHhiyZrIR+R88HqzmIgngFP6+UMkODh\nMXBZJhk5qF/0Nz6Ifb+XD8sPm+zUg6qSZ1cx38eV1Ut69LF3FotznMDwcrngNudz\n0dSGDxdb1mB1e1iRkvCCkXJkpNUexYD94gpbSXAX7ufsZm2hrj9GOg1taNAw5BN2\npHM3DeN8kXy2fzGG4qdw9xyLv4FcofWhfGBqQiB/A1zprr/dmRGv/BfBzNAbF+TL\nPiRLkWetAgMBAAECggEABZEcka+oHGh3z5M8DksqEBPNJQSSL8Hbu3QG2PESXF83\nRNVu8ddGEup5TN638Mm0plkSYyvyweD4JW2jKkEL2OWGemp8rJEfiQ6gWkNAKz5y\nTWAcgApmXEmrybt9gALvudplBigA3MFAkk2+ZLpcJLDm98FMi6nzRBD9dQByEM6W\nN0I0J4GE7Hlf72Q02aKwD9ycRi9xUH94ODTQq0YSp/mUbG75Z4I2uZ/Jx01Jqul8\nAsWc+L8ga19p+rbKWtvbjGV6IeGOFckdwZ6rFklHHlD9XXB3SV79R2MDsqy16v/R\nPHCHZk1Zd/ySUpBqB5IfqpZb8usgNepAn7kH2gUV0QKBgQDLtra7Jgm+3Td0Ltnu\nLocKEyRWuy5sImUdpjpnh2cO/1oA69JKX1kF12QePArY+ErvEaHiWiZ9W0YgQQyU\ns/WI8wyzPaKn6bKZdspVgxvPvY2XRPUBS5GZnpBqe8xFpVRfwBFzRQTIphzYfhGq\nEppNtWVYqImw5RYN0OFjChnVtQKBgQDLcy+gHK+lGAHvEQQSbK5wcdTtcMTmbZW5\ntWP6iBYQMb66TbDMetxW8uolD4uBGP/ySMO8RQ8MlM3jM/t+batC0hEP9uU7J2s8\n6XstyFo0DhG8KFfWZEuViEzI7nK9bLJ+R3VIRdCYnlWkCvgRpfGeIDAakqLuBF4i\n3cYrEcMFGQKBgQDAzaZ2zFKO9XpFmQ4j8p9WdrV+7NvL9mWzQR+n2qw8sosxsgAu\n6b0s3SXhw7wUjDMHv61yuRYSsO9XGZnZp9Usj7SmdCBdQb8KpjZr5pHM9T9sOxST\n7DzaowtV7ONxyz9m/DbH3Tvg1+8XK4J2b/Lgt107IxBmfvt3igm3ndjDvQKBgCQz\nKZ02nXYlsGpmP7A7kEpHpthcwVwy0XpKsTBpuGtHPqWNn1Cy57O84zaW7n6ZASmO\nEu3T59qYO44auLwFLXzlPc32Y1FEMUuUS6uYw5wRiMxO7VojXGON7gOukdHsnlHj\nyxWB/py5R4m5vev99+Dn30dLIhxxwII5rcIKFgY5AoGBAIq71QTzMXQn9n6pV/ij\nCRvHc5+H3BzyKSDx/iKCj25vvpShg9Q7SahXpUbTl9j5jTPu9B2ALDzKKIu9r0TM\ntLmWiovTBmWGtTcRObVU3G3iCoS2HkNXlTMH2OgyMCIGhomPO29w9J3XiZtyw6Mw\nB1tFy4vkX1Jr4gpM96UZreFK\n-----END PRIVATE KEY-----\n",
+  "client_email": "docvault@speed-urls-422904.iam.gserviceaccount.com",
+  "client_id": "105411125121739245307",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/docvault%40speed-urls-422904.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

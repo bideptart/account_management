@@ -1,0 +1,316 @@
+<!-- Upload Modal -->
+<div id="uploadModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-upload mr-2 text-primary-600"></i>
+                Upload Files
+            </h3>
+            <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- Upload Form -->
+        <form id="uploadForm" method="post" enctype="multipart/form-data" action="{% url 'files:upload_file' %}">
+            {% csrf_token %}
+            
+            <!-- Hidden folder input -->
+            <input type="hidden" name="folder_id" value="{{ current_folder.id|default:'' }}" id="uploadFolderId">
+            
+            <!-- Drag and Drop Zone -->
+            <div class="mt-6">
+                <div id="dropZone" 
+                     class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-400 transition-colors cursor-pointer">
+                    <div id="dropZoneContent">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                        <h4 class="text-lg font-medium text-gray-900 mb-2">Drop files here or click to browse</h4>
+                        <p class="text-sm text-gray-500 mb-4">Support for multiple files. Maximum file size: 100MB per file.</p>
+                        <button type="button" 
+                                onclick="document.getElementById('fileInput').click()" 
+                                class="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-folder-open mr-2"></i>Choose Files
+                        </button>
+                    </div>
+                    
+                    <!-- File Input -->
+                    <input type="file" 
+                           id="fileInput" 
+                           name="files" 
+                           multiple 
+                           class="hidden" 
+                           accept="*/*">
+                </div>
+            </div>
+            
+            <!-- Selected Files List -->
+            <div id="selectedFiles" class="mt-6 hidden">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">Selected Files:</h4>
+                <div id="filesList" class="space-y-2 max-h-40 overflow-y-auto"></div>
+            </div>
+            
+            <!-- Upload Progress -->
+            <div id="uploadProgress" class="mt-6 hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">Uploading...</span>
+                    <span id="progressText" class="text-sm text-gray-500">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="progressBar" class="bg-primary-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <!-- Upload Options -->
+            <div class="mt-6 border-t border-gray-200 pt-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input type="checkbox" 
+                               id="overwriteFiles" 
+                               name="overwrite" 
+                               class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500">
+                        <label for="overwriteFiles" class="ml-2 text-sm text-gray-700">
+                            Overwrite existing files
+                        </label>
+                    </div>
+                    <div class="text-xs text-gray-500">
+                        <span id="totalSize">0 files selected</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Actions -->
+            <div class="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+                <button type="button" 
+                        onclick="closeUploadModal()" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        id="uploadButton" 
+                        disabled 
+                        class="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-upload mr-2"></i>Upload Files
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Upload modal functionality
+let selectedFiles = [];
+
+function openUploadModal() {
+    const modal = document.getElementById('uploadModal');
+    modal.classList.remove('hidden');
+    resetUploadForm();
+}
+
+function closeUploadModal() {
+    const modal = document.getElementById('uploadModal');
+    modal.classList.add('hidden');
+    resetUploadForm();
+}
+
+function resetUploadForm() {
+    selectedFiles = [];
+    document.getElementById('fileInput').value = '';
+    document.getElementById('selectedFiles').classList.add('hidden');
+    document.getElementById('uploadProgress').classList.add('hidden');
+    document.getElementById('uploadButton').disabled = true;
+    updateFilesList();
+    updateTotalSize();
+}
+
+// Drag and drop functionality
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+// Prevent default drag behaviors
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+// Highlight drop zone when item is dragged over it
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, unhighlight, false);
+});
+
+// Handle dropped files
+dropZone.addEventListener('drop', handleDrop, false);
+
+// Handle file input change
+fileInput.addEventListener('change', function(e) {
+    handleFiles(e.target.files);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function highlight(e) {
+    dropZone.classList.add('border-primary-400', 'bg-primary-50');
+}
+
+function unhighlight(e) {
+    dropZone.classList.remove('border-primary-400', 'bg-primary-50');
+}
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleFiles(files);
+}
+
+function handleFiles(files) {
+    selectedFiles = Array.from(files);
+    updateFilesList();
+    updateTotalSize();
+    document.getElementById('uploadButton').disabled = selectedFiles.length === 0;
+    
+    if (selectedFiles.length > 0) {
+        document.getElementById('selectedFiles').classList.remove('hidden');
+    }
+}
+
+function updateFilesList() {
+    const filesList = document.getElementById('filesList');
+    filesList.innerHTML = '';
+    
+    selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'flex items-center justify-between p-2 bg-gray-50 rounded';
+        fileItem.innerHTML = `
+            <div class="flex items-center">
+                <i class="${getFileIconClass(file.name)} mr-2"></i>
+                <span class="text-sm text-gray-900 truncate">${file.name}</span>
+                <span class="text-xs text-gray-500 ml-2">(${formatFileSize(file.size)})</span>
+            </div>
+            <button type="button" 
+                    onclick="removeFile(${index})" 
+                    class="text-red-500 hover:text-red-700 transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        filesList.appendChild(fileItem);
+    });
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    updateFilesList();
+    updateTotalSize();
+    document.getElementById('uploadButton').disabled = selectedFiles.length === 0;
+    
+    if (selectedFiles.length === 0) {
+        document.getElementById('selectedFiles').classList.add('hidden');
+    }
+    
+    // Update file input
+    const dt = new DataTransfer();
+    selectedFiles.forEach(file => dt.items.add(file));
+    document.getElementById('fileInput').files = dt.files;
+}
+
+function updateTotalSize() {
+    const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+    const totalSizeElement = document.getElementById('totalSize');
+    
+    if (selectedFiles.length === 0) {
+        totalSizeElement.textContent = '0 files selected';
+    } else {
+        totalSizeElement.textContent = `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} (${formatFileSize(totalSize)})`;
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Form submission with progress
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (selectedFiles.length === 0) return;
+    
+    const formData = new FormData();
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const folderId = document.getElementById('uploadFolderId').value;
+    const overwrite = document.getElementById('overwriteFiles').checked;
+    
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    if (folderId) formData.append('folder_id', folderId);
+    if (overwrite) formData.append('overwrite', 'on');
+    
+    selectedFiles.forEach(file => {
+        formData.append('files', file);
+    });
+    
+    // Show progress
+    document.getElementById('uploadProgress').classList.remove('hidden');
+    document.getElementById('uploadButton').disabled = true;
+    
+    // Upload with progress tracking
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            document.getElementById('progressBar').style.width = percentComplete + '%';
+            document.getElementById('progressText').textContent = Math.round(percentComplete) + '%';
+        }
+    });
+    
+    xhr.addEventListener('load', function() {
+        if (xhr.status === 200) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                    showMessage('Files uploaded successfully', 'success');
+                    closeUploadModal();
+                    // Refresh the page to show new files
+                    window.location.reload();
+                } else {
+                    showMessage('Upload failed: ' + response.error, 'error');
+                }
+            } catch (e) {
+                showMessage('Files uploaded successfully', 'success');
+                closeUploadModal();
+                window.location.reload();
+            }
+        } else {
+            showMessage('Upload failed. Please try again.', 'error');
+        }
+        
+        document.getElementById('uploadProgress').classList.add('hidden');
+        document.getElementById('uploadButton').disabled = false;
+    });
+    
+    xhr.addEventListener('error', function() {
+        showMessage('Upload failed. Please check your connection.', 'error');
+        document.getElementById('uploadProgress').classList.add('hidden');
+        document.getElementById('uploadButton').disabled = false;
+    });
+    
+    xhr.open('POST', this.action);
+    xhr.send(formData);
+});
+
+// Close modal when clicking outside
+document.getElementById('uploadModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeUploadModal();
+    }
+});
+</script>

@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - Account Management System{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="bg-white shadow-sm border-b border-gray-200 mb-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                    <i class="fas fa-tachometer-alt mr-3 text-primary-600"></i>
+                    Admin Dashboard
+                </h1>
+                <p class="text-gray-600 mt-2">Manage users and monitor system activity</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i>
+                    Export Data
+                </button>
+                <button class="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Add User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-users text-blue-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-2xl font-bold text-gray-900">{{ users|length }}</h3>
+                <p class="text-sm text-gray-600">Total Users</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-file-alt text-green-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-2xl font-bold text-gray-900">{{ total_files|default:"0" }}</h3>
+                <p class="text-sm text-gray-600">Total Files</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-folder text-yellow-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-2xl font-bold text-gray-900">{{ total_folders|default:"0" }}</h3>
+                <p class="text-sm text-gray-600">Total Folders</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-hdd text-purple-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-2xl font-bold text-gray-900">{{ storage_used|default:"0 MB" }}</h3>
+                <p class="text-sm text-gray-600">Storage Used</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Management Section -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+    <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-gray-900">User Management</h2>
+            <div class="flex items-center space-x-4">
+                <!-- Search -->
+                <div class="relative">
+                    <input type="text" 
+                           id="userSearch" 
+                           placeholder="Search users..." 
+                           onkeyup="searchUsers()"
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 w-64">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+                
+                <!-- View Toggle -->
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                    <button type="button" 
+                            class="px-3 py-1 text-sm font-medium text-primary-600 bg-white rounded-md shadow-sm" 
+                            data-view="grid">
+                        <i class="fas fa-th mr-1"></i>Grid
+                    </button>
+                    <button type="button" 
+                            class="px-3 py-1 text-sm font-medium text-gray-600 hover:text-gray-900" 
+                            data-view="list">
+                        <i class="fas fa-list mr-1"></i>List
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- User Cards Grid -->
+    <div class="p-6">
+        {% if users %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="usersGrid">
+                {% for user_data in users %}
+                    <div class="user-card bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow" 
+                         data-username="{{ user_data.user.username }}" 
+                         data-email="{{ user_data.user.email }}">
+                        <!-- User Avatar -->
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                                {{ user_data.user.username|first|upper }}
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="font-semibold text-gray-900">{{ user_data.user.username }}</h3>
+                                <p class="text-sm text-gray-500">{{ user_data.user.first_name }} {{ user_data.user.last_name }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- User Info -->
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-envelope mr-2 text-gray-400"></i>
+                                <span class="truncate">{{ user_data.user.email }}</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-calendar mr-2 text-gray-400"></i>
+                                <span>Joined {{ user_data.user.date_joined|date:"M d, Y" }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Stats -->
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-primary-600">{{ user_data.file_count }}</div>
+                                <div class="text-xs text-gray-500">Files</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-yellow-600">{{ user_data.folder_count }}</div>
+                                <div class="text-xs text-gray-500">Folders</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="flex space-x-2">
+                            <a href="{% url 'files:file_list' %}?user_id={{ user_data.user.id }}" 
+                               class="flex-1 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium py-2 px-3 rounded-lg text-center transition-colors">
+                                <i class="fas fa-eye mr-1"></i>View Files
+                            </a>
+                            <button class="bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors" 
+                                    title="Edit User">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors" 
+                                    title="Delete User">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-12">
+                <svg class="mx-auto h-24 w-24 text-gray-300 mb-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"/>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+                <p class="text-gray-500 mb-6">Start by creating your first user account.</p>
+                <button class="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-user-plus mr-2"></i>Add First User
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.avatar-circle:hover {
+    background: var(--secondary-color);
+    transform: scale(1.05);
+}
+
+.user-row {
+    transition: background-color 0.2s ease;
+}
+
+.user-row:hover {
+    background: var(--light-bg);
+}
+
+.stats-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.table th {
+    background: var(--light-bg);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 1rem;
+    border: none;
+}
+
+.btn-group-sm .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-group-sm .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--hover-shadow);
+}
+
+.card-header {
+    background: var(--light-bg);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 1.25rem;
+}
+
+.input-group .form-control {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease;
+    background: var(--card-bg);
+    color: #333;
+}
+
+.input-group .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.125rem rgba(37, 99, 235, 0.25);
+}
+
+.badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+</style>
+
+<script>
+// Simple User Search for Grid Layout
+function searchUsers() {
+    const input = document.getElementById('userSearch');
+    const filter = input.value.toLowerCase();
+    const grid = document.getElementById('usersGrid');
+    const cards = grid ? grid.querySelectorAll('.user-card') : [];
+    
+    cards.forEach(card => {
+        const username = card.dataset.username.toLowerCase();
+        const email = card.dataset.email.toLowerCase();
+        const textContent = card.textContent.toLowerCase();
+        
+        const found = username.includes(filter) || 
+                     email.includes(filter) || 
+                     textContent.includes(filter);
+        
+        card.style.display = found ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

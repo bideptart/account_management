@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ selected_user.username }}'s Files - Admin{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between py-6">
+                <div class="flex items-center">
+                    <a href="{% url 'accounts:admin_dashboard' %}" class="text-gray-500 hover:text-gray-700 mr-4">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </a>
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold text-lg mr-4">
+                            {{ selected_user.username|first|upper }}
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">{{ selected_user.username }}'s Files</h1>
+                            <p class="text-gray-600">{{ selected_user.email }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-user-times mr-2"></i>Delete User
+                    </button>
+                    <button class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-download mr-2"></i>Download All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-primary-600">{{ file_count }}</div>
+                    <div class="text-sm text-gray-500">Total Files</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-yellow-600">{{ folder_count }}</div>
+                    <div class="text-sm text-gray-500">Total Folders</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600">{{ total_size|filesizeformat }}</div>
+                    <div class="text-sm text-gray-500">Storage Used</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600">{{ selected_user.date_joined|timesince }}</div>
+                    <div class="text-sm text-gray-500">Member Since</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Breadcrumb -->
+        <nav class="flex mb-6" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'accounts:admin_dashboard' %}" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-home mr-2"></i>Admin
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                        <span class="text-gray-500">{{ selected_user.username }}</span>
+                    </div>
+                </li>
+                {% if current_folder %}
+                    {% for folder in breadcrumb_folders %}
+                        <li>
+                            <div class="flex items-center">
+                                <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                                <a href="?folder_id={{ folder.id }}" class="text-gray-500 hover:text-gray-700">{{ folder.name }}</a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                {% endif %}
+            </ol>
+        </nav>
+
+        <!-- Search and Actions -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+            <div class="flex-1 max-w-md">
+                <div class="relative">
+                    <input type="text" 
+                           id="searchInput" 
+                           placeholder="Search files and folders..." 
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+            </div>
+            <div class="flex space-x-3">
+                <button class="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Create Folder
+                </button>
+                <button class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-upload mr-2"></i>Upload Files
+                </button>
+            </div>
+        </div>
+
+        <!-- Files and Folders Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4" id="filesGrid">
+            <!-- Folders -->
+            {% for folder in folders %}
+                <div class="folder-card bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer" 
+                     data-name="{{ folder.name|lower }}">
+                    <div class="text-center">
+                        <i class="fas fa-folder text-4xl text-yellow-500 mb-3"></i>
+                        <h3 class="font-medium text-gray-900 truncate mb-2">{{ folder.name }}</h3>
+                        <p class="text-xs text-gray-500 mb-3">{{ folder.created_at|date:"M d, Y" }}</p>
+                        <div class="flex justify-center space-x-1">
+                            <a href="?folder_id={{ folder.id }}" 
+                               class="bg-primary-600 hover:bg-primary-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                               title="Open">
+                                <i class="fas fa-folder-open"></i>
+                            </a>
+                            <button class="bg-gray-600 hover:bg-gray-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                                    title="Rename">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                                    title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+            <!-- Files -->
+            {% for file in files %}
+                <div class="file-card bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" 
+                     data-name="{{ file.name|lower }}">
+                    <div class="text-center">
+                        <i class="file-icon text-4xl mb-3 {{ file.name|get_file_icon_class }}"></i>
+                        <h3 class="font-medium text-gray-900 truncate mb-1" title="{{ file.name }}">{{ file.name }}</h3>
+                        <p class="text-xs text-gray-500 mb-1">{{ file.size|filesizeformat }}</p>
+                        <p class="text-xs text-gray-500 mb-3">{{ file.uploaded_at|date:"M d, Y" }}</p>
+                        <div class="flex justify-center space-x-1">
+                            <a href="{{ file.file.url }}" 
+                               class="bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                               title="Download" download>
+                                <i class="fas fa-download"></i>
+                            </a>
+                            <button class="bg-gray-600 hover:bg-gray-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                                    title="Rename">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                                    title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Empty State -->
+        {% if not folders and not files %}
+            <div class="text-center py-12">
+                <svg class="mx-auto h-24 w-24 text-gray-300 mb-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z"/>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No files or folders</h3>
+                <p class="text-gray-500">This user hasn't uploaded any files yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Search functionality
+function searchFiles() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toLowerCase();
+    const grid = document.getElementById('filesGrid');
+    const cards = grid.querySelectorAll('.file-card, .folder-card');
+    
+    cards.forEach(card => {
+        const name = card.dataset.name;
+        const found = name.includes(filter);
+        card.style.display = found ? '' : 'none';
+    });
+}
+
+// Add event listener for search
+document.getElementById('searchInput').addEventListener('input', searchFiles);
+
+// File type icon helper
+function getFileIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const iconMap = {
+        'pdf': 'fas fa-file-pdf text-red-500',
+        'doc': 'fas fa-file-word text-blue-500',
+        'docx': 'fas fa-file-word text-blue-500',
+        'xls': 'fas fa-file-excel text-green-500',
+        'xlsx': 'fas fa-file-excel text-green-500',
+        'ppt': 'fas fa-file-powerpoint text-orange-500',
+        'pptx': 'fas fa-file-powerpoint text-orange-500',
+        'jpg': 'fas fa-file-image text-purple-500',
+        'jpeg': 'fas fa-file-image text-purple-500',
+        'png': 'fas fa-file-image text-purple-500',
+        'gif': 'fas fa-file-image text-purple-500',
+        'mp4': 'fas fa-file-video text-red-500',
+        'avi': 'fas fa-file-video text-red-500',
+        'mov': 'fas fa-file-video text-red-500',
+        'mp3': 'fas fa-file-audio text-green-500',
+        'wav': 'fas fa-file-audio text-green-500',
+        'zip': 'fas fa-file-archive text-yellow-500',
+        'rar': 'fas fa-file-archive text-yellow-500',
+        'txt': 'fas fa-file-alt text-gray-500',
+        'csv': 'fas fa-file-csv text-green-500'
+    };
+    return iconMap[ext] || 'fas fa-file text-gray-500';
+}
+
+// Apply file icons
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.file-icon').forEach(icon => {
+        const filename = icon.closest('.file-card').querySelector('h3').textContent;
+        icon.className = 'file-icon text-4xl mb-3 ' + getFileIcon(filename).split(' ').slice(1).join(' ');
+    });
+});
+</script>
+{% endblock %}

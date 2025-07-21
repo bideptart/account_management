@@ -1,0 +1,241 @@
+<!-- Folder Card Component -->
+<div class="folder-card bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 group cursor-pointer" 
+     data-folder-id="{{ folder.id }}" 
+     data-folder-name="{{ folder.name|lower }}" 
+     data-id="{{ folder.id }}"
+     data-name="{{ folder.name|escape }}"
+     onclick="handleFolderOpenClick(this)">
+    
+    <!-- Folder Icon -->
+    <div class="text-center mb-3">
+        <i class="fas fa-folder text-5xl text-yellow-500 group-hover:text-yellow-600 transition-colors"></i>
+    </div>
+    
+    <!-- Folder Info -->
+    <div class="text-center">
+        <h3 class="font-medium text-gray-900 truncate mb-1" title="{{ folder.name }}">
+            {{ folder.name }}
+        </h3>
+        <p class="text-xs text-gray-500 mb-1">
+            {{ folder.file_count|default:0 }} file{{ folder.file_count|pluralize }}
+        </p>
+        <p class="text-xs text-gray-400 mb-3">
+            <i class="fas fa-clock mr-1"></i>
+            {{ folder.created_at|date:"M d, Y H:i" }}
+        </p>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="flex justify-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity" 
+         onclick="event.stopPropagation()">
+        
+        <!-- Open Button -->
+        <button data-id="{{ folder.id }}" 
+                data-name="{{ folder.name|escape }}"
+                onclick="handleFolderOpenClick(this)" 
+                class="bg-primary-600 hover:bg-primary-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                title="Open Folder">
+            <i class="fas fa-folder-open"></i>
+        </button>
+        
+        <!-- Rename Button -->
+        <button data-id="{{ folder.id }}" 
+                data-name="{{ folder.name|escape }}"
+                onclick="handleFolderRenameClick(this)" 
+                class="bg-gray-600 hover:bg-gray-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                title="Rename">
+            <i class="fas fa-edit"></i>
+        </button>
+        
+        <!-- Share Button -->
+        <button data-id="{{ folder.id }}" 
+                data-name="{{ folder.name|escape }}"
+                onclick="handleFolderShareClick(this)" 
+                class="bg-purple-600 hover:bg-purple-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                title="Share">
+            <i class="fas fa-share-alt"></i>
+        </button>
+        
+        <!-- Download Button -->
+        <button data-id="{{ folder.id }}" 
+                data-name="{{ folder.name|escape }}"
+                onclick="handleFolderDownloadClick(this)" 
+                class="bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                title="Download as ZIP">
+            <i class="fas fa-download"></i>
+        </button>
+        
+        <!-- Delete Button -->
+        <button data-id="{{ folder.id }}" 
+                data-name="{{ folder.name|escape }}"
+                onclick="handleFolderDeleteClick(this)" 
+                class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded transition-colors" 
+                title="Delete">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+    
+    <!-- Folder Stats Badge -->
+    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {% if folder.file_count > 0 %}
+            <span class="bg-primary-600 text-white text-xs px-2 py-1 rounded-full">
+                {{ folder.file_count }}
+            </span>
+        {% endif %}
+    </div>
+    
+    <!-- Selection Checkbox (hidden by default) -->
+    <div class="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity" 
+         onclick="event.stopPropagation()">
+        <input type="checkbox" 
+               class="folder-checkbox w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500" 
+               value="{{ folder.id }}" 
+               onchange="toggleFolderSelection(this)">
+    </div>
+    
+    <!-- Folder Type Indicator -->
+    {% if folder.is_shared %}
+        <div class="absolute bottom-2 left-2">
+            <i class="fas fa-users text-purple-500 text-sm" title="Shared Folder"></i>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Folder card functionality
+function handleFolderOpenClick(button) {
+    const folderId = button.dataset.id;
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('folder_id', folderId);
+    window.location.href = currentUrl.toString();
+}
+
+function handleFolderRenameClick(button) {
+    const folderId = button.dataset.id;
+    const currentName = button.dataset.name;
+    const newName = prompt('Enter new folder name:', currentName);
+    if (newName && newName !== currentName) {
+        // Send AJAX request to rename folder
+        fetch(`/files/rename-folder/${folderId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ name: newName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the folder name in the card
+                const folderCard = document.querySelector(`[data-folder-id="${folderId}"]`);
+                if (folderCard) {
+                    const nameElement = folderCard.querySelector('h3');
+                    nameElement.textContent = newName;
+                    nameElement.title = newName;
+                    folderCard.dataset.folderName = newName.toLowerCase();
+                }
+                showMessage('Folder renamed successfully', 'success');
+            } else {
+                alert('Error renaming folder: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error renaming folder');
+        });
+    }
+}
+
+function handleFolderShareClick(button) {
+    const folderId = button.dataset.id;
+    // Generate shareable link for folder
+    const shareUrl = `${window.location.origin}/files/share-folder/${folderId}/`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'Shared Folder',
+            url: shareUrl
+        });
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            alert('Share link copied to clipboard!');
+        }).catch(() => {
+            prompt('Copy this link to share:', shareUrl);
+        });
+    }
+}
+
+function handleFolderDownloadClick(button) {
+    const folderId = button.dataset.id;
+    // Create a temporary link to download the folder as ZIP
+    const downloadUrl = `/files/download-folder/${folderId}/`;
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showMessage('Folder download started', 'info');
+}
+
+function handleFolderDeleteClick(button) {
+    const folderId = button.dataset.id;
+    const folderName = button.dataset.name;
+    const fileCount = document.querySelector(`[data-folder-id="${folderId}"] .text-xs`).textContent;
+    const confirmMessage = fileCount.includes('0 file') 
+        ? `Are you sure you want to delete the folder "${folderName}"?`
+        : `Are you sure you want to delete the folder "${folderName}" and all its contents? This action cannot be undone.`;
+    
+    if (confirm(confirmMessage)) {
+        // Send AJAX request to delete folder
+        fetch(`/files/delete-folder/${folderId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the folder card from DOM
+                const folderCard = document.querySelector(`[data-folder-id="${folderId}"]`);
+                if (folderCard) {
+                    folderCard.remove();
+                }
+                // Show success message
+                showMessage('Folder deleted successfully', 'success');
+            } else {
+                alert('Error deleting folder: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting folder');
+        });
+    }
+}
+
+function toggleFolderSelection(checkbox) {
+    const folderCard = checkbox.closest('.folder-card');
+    if (checkbox.checked) {
+        folderCard.classList.add('ring-2', 'ring-primary-500', 'bg-primary-50');
+    } else {
+        folderCard.classList.remove('ring-2', 'ring-primary-500', 'bg-primary-50');
+    }
+    
+    // Update bulk actions visibility
+    updateBulkActionsVisibility();
+}
+
+// Double-click to open folder
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.folder-card').forEach(card => {
+        card.addEventListener('dblclick', function() {
+            handleFolderOpenClick(this);
+        });
+    });
+});
+</script>
